@@ -17,33 +17,33 @@ zabbix.example.com
 
 This role will create host groups from groups in ansible host file and hosts for this groups. In zabbix_templates var you can assign templates for these hosts.
 
-#3 Role Variables
+## Role Variables
 --------------
 
-#6 Zabbix version (supported by Zabbix: 3.0, 3.1, 3.2, 3.4, 3.5, 4.0)
+#### Zabbix version (supported by Zabbix: 3.0, 3.1, 3.2, 3.4, 3.5, 4.0)
 zabbix_version: "4.0"
 
-#6 Zabbix minor version (supported 2 for 4.0 and 1 for older versions)
+#### Zabbix minor version (supported 2 for 4.0 and 1 for older versions)
 zabbix_version_postfix: 2
 
-#6 Title of frontend
+#### Title of frontend
 zabbix_web_title   : "{{ project_name|default('Application') }}"
 
-#6 Additional web user username
+#### Additional web user username
 zabbix_web_user    : "user"
 
-#6 Additional web user password
+#### Additional web user password
 zabbix_web_password: "user"
 
-#6 Access to mysql database
+#### Access to mysql database
 zabbix_mysql_user    : zabbix
 zabbix_mysql_password: zabbix
 zabbix_mysql_db      : zabbix
 
-#6 IP-address of Zabbix-server for Zabbix-agents
+#### IP-address of Zabbix-server for Zabbix-agents
 zabbix_server_ip: "{{ hostvars[groups['monitoring'][0]]['ansible_default_ipv4']['address'] }}"
 
-#6 Zabbix-server configuration options
+#### Zabbix-server configuration options
 zabbix_server_config_options:
   - option: DBHost
     value : ""
@@ -56,10 +56,10 @@ zabbix_server_config_options:
   - option: LogFileSize
     value : 256
 
-#6 Default value of data checkings
+#### Default value of data checkings
 zabbix_items_default_delay: 5m
 
-#6 Templates for data gathering - example:
+#### Templates for data gathering - example:
 ```
 zabbix_templates:  
   - name  : Linux server  
