@@ -3,7 +3,7 @@ Installation and configuration of Zabbix server and agents for Ubuntu (16.04 tes
   
 Playbook for install and configure Zabbix server and Zabbix agents
   
-Ansible's hosts.yml are provided hosts and groups for Zabbix server. 
+This role will create host groups from groups in ansible host file and hosts for this groups. In zabbix_templates var you can assign templates for these hosts.  
 Check default variables! 
   
 You can easily deploy Zabbix with such hosts.yml for example (change hostnames):
@@ -15,7 +15,7 @@ test-db.example.com
 [monitoring]  
 zabbix.example.com  
   
-This role will create host groups from groups in ansible host file and hosts for this groups. In zabbix_templates var you can assign templates for these hosts.
+
 
 ## Role Variables
 --------------
