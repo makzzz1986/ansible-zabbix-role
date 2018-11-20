@@ -21,7 +21,7 @@ This role will create host groups from groups in ansible host file and hosts for
 --------------
 
 #### Zabbix version (supported by Zabbix: 3.0, 3.1, 3.2, 3.4, 3.5, 4.0)
-zabbix_version: "4.0"
+```zabbix_version: "4.0"```
 
 #### Zabbix minor version (supported 2 for 4.0 and 1 for older versions)
 zabbix_version_postfix: 2
@@ -36,14 +36,15 @@ zabbix_web_user    : "user"
 zabbix_web_password: "user"
 
 #### Access to mysql database
-zabbix_mysql_user    : zabbix
-zabbix_mysql_password: zabbix
-zabbix_mysql_db      : zabbix
+zabbix_mysql_user    : zabbix  
+zabbix_mysql_password: zabbix  
+zabbix_mysql_db      : zabbix  
 
 #### IP-address of Zabbix-server for Zabbix-agents
-zabbix_server_ip: "{{ hostvars[groups['monitoring'][0]]['ansible_default_ipv4']['address'] }}"
+zabbix_server_ip: "{{ hostvars[groups['monitoring'][0]]['ansible_default_ipv4']['address'] }}"  
 
 #### Zabbix-server configuration options
+```
 zabbix_server_config_options:
   - option: DBHost
     value : ""
@@ -55,9 +56,9 @@ zabbix_server_config_options:
     value : "{{ zabbix_mysql_password }}"
   - option: LogFileSize
     value : 256
-
+```
 #### Default value of data checkings
-zabbix_items_default_delay: 5m
+```zabbix_items_default_delay: 5m```
 
 #### Templates for data gathering - example:
 ```
