@@ -1,0 +1,25 @@
+---
+- name      : Configure Zabbix settings
+  lineinfile:
+    dest  : /etc/zabbix/zabbix_server.conf
+    regexp: "^#?{{ item.option }}.+$"
+    line  : "{{ item.option }}={{ item.value }}"
+    state : "{{ item.state | default('present') }}"
+  with_items: "{{ zabbix_server_config_options }}"
+  notify    : Restart zabbix-server
+
+- name    : Configure http configuration of Zabbix
+  template:
+    src  : "{{ role_path }}/templates/zabbix.conf.php"
+    dest : /etc/zabbix/web/zabbix.conf.php
+    owner: www-data
+    group: www-data
+    mode: 0644
+  notify    : Restart apache2
+
+- name   : Configure apache2 settings
+  replace:
+    dest    : /etc/apache2/conf-enabled/zabbix.conf
+    regexp  : '(.*)#(.*)Europe/.*'
+    replace    : '\1\2Europe/Moscow'
+  notify    : Restart apache2

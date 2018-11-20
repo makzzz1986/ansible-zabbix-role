@@ -1,0 +1,57 @@
+---
+- name   : Download Zabbix repo
+  get_url:
+    url : "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/ubuntu/pool/main/z/zabbix-release/zabbix-release_{{ zabbix_version }}-{{ zabbix_version_postfix|default('1') }}+{{ ansible_distribution_release }}_all.deb"
+    dest: "/tmp/zabbix-release_{{ zabbix_version }}.deb"
+    mode: 0644
+
+- name: Installing Zabbix repo
+  apt :
+    deb: "/tmp/zabbix-release_{{ zabbix_version }}.deb"
+
+- name    : Installing Zabbix-server and other usefull packages
+  register: install
+  apt :
+    name        : "{{ item }}"
+    state       : present
+    update_cache: yes 
+  with_items:
+    - zabbix-server-mysql
+    - zabbix-frontend-php
+  notify:
+    - Enable zabbix-server
+    - Enable apache2
+
+- block:
+    - name : Extract blank zabbix DB by zcat
+      shell: "zcat /usr/share/doc/zabbix-server-mysql/create.sql.gz > /tmp/zabbix.sql"
+
+    - name       : "Add {{ zabbix_mysql_user }} user to {{ zabbix_mysql_db }}"
+      mysql_user : 
+        name    : "{{ zabbix_mysql_user }}"
+        password: "{{ zabbix_mysql_password }}"
+        state   : present
+        priv    : "{{ zabbix_mysql_db }}.*:ALL,GRANT"
+        host    : localhost
+
+    - name    : Create zabbix DB
+      mysql_db:
+        name          : "{{ zabbix_mysql_db }}"
+        state         : present
+        login_user    : "{{ zabbix_mysql_user }}"
+        login_password: "{{ zabbix_mysql_password }}"
+        encoding      : utf8
+        collation     : utf8_general_ci
+
+    - name         : Restore blank Zabbix database (not idempotent)
+      mysql_db:
+        name       : "zabbix"
+        state      : import
+        target     : "/tmp/zabbix.sql"
+      ignore_errors: yes
+
+    - name   : Start zabbix-server
+      service:
+        name : zabbix-server
+        state: started
+  when: "install.changed"

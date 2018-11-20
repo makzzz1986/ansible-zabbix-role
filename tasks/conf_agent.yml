@@ -1,0 +1,27 @@
+---
+- name   : Download Zabbix repo
+  get_url:
+    url : "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/ubuntu/pool/main/z/zabbix-release/zabbix-release_{{ zabbix_version }}-{{ zabbix_version_postfix|default('1') }}+{{ ansible_distribution_release }}_all.deb"
+    dest: "/tmp/zabbix-release_{{ zabbix_version }}.deb"
+    mode: 0644
+
+- name: Installing Zabbix repo
+  apt :
+    deb: "/tmp/zabbix-release_{{ zabbix_version }}.deb"
+
+- name: Installing Zabbix-agent
+  apt :
+    name        : "{{ item }}"
+    state       : present
+    update_cache: yes 
+  with_items:
+    - zabbix-agent
+  notify: Enable zabbix-agent
+
+- name    : Configure Zabbix agent settings
+  template:
+    src  : "{{ role_path }}/templates/zabbix_agentd.conf.j2"
+    dest : /etc/zabbix/zabbix_agentd.conf
+    mode: 0644
+  notify    : Restart zabbix-agent
+

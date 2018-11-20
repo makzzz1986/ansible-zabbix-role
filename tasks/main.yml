@@ -1,0 +1,18 @@
+---
+### Server part ###
+- block:
+    - name   : Installing and creating base DB and user
+      include: "{{ role_path }}/tasks/initial.yml"
+
+    - name   : Configuring Zabbix-server and apache2 
+      include: "{{ role_path }}/tasks/conf_server.yml"
+
+    - name   : API part
+      include: "{{ role_path }}/tasks/api.yml"
+  when: "'monitoring' in group_names"
+
+### Agents part ###
+- block:
+    - name   : Installing agent and configurate it
+      include: "{{ role_path }}/tasks/conf_agent.yml"
+

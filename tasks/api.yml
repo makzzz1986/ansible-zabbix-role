@@ -1,0 +1,93 @@
+---
+- name    : Set var of Zabbix API link
+  set_fact:
+    api: "http://{{ hostvars[groups['monitoring'][0] ]['ansible_default_ipv4']['address'] }}/zabbix/api_jsonrpc.php"
+ 
+- name     : Get auth token
+  register : auth_token
+  uri      :
+    url    : "{{ api }}"
+    method : POST
+    headers:
+      Content-Type: "application/json-rpc"
+    status_code: 200, 201, 202, 204
+    body   :
+      jsonrpc: "2.0"
+      method : "user.login"
+      id     : 1
+      auth   : null
+      params : 
+        user    : "Admin"
+        password: "zabbix"
+    body_format     : json
+ 
+- name     : "Ensure that zabbix user: {{ zabbix_web_user }} is exist"
+  register : api_user_create
+  uri      :
+    url    : "{{ api }}"
+    method : POST
+    headers:
+      Content-Type: "application/json-rpc"
+    status_code: 200, 201, 202, 204
+    body   :
+      jsonrpc: "2.0"
+      method : "user.create"
+      id     : 1
+      auth   : "{{ auth_token.json.result }}"
+      params : 
+        alias   : "{{ zabbix_web_user }}"
+        passwd: "{{ zabbix_web_password }}"
+        usrgrps :
+          - usrgrpid: "8"
+    body_format     : json
+
+- name      : Create new configuration xml
+  connection: local
+  become    : no
+  register  : xml_creating 
+  template  :
+    src  : "{{ role_path }}/templates/configuration.xml.j2"
+    dest : "{{ role_path }}/templates/configuration.xml"
+
+- name     : "Import configuration"
+  register : api_templ_import
+  uri      :
+    url    : "{{ api }}"
+    method : POST
+    headers:
+      Content-Type: "application/json-rpc"
+    status_code: 200, 201, 202, 204
+    body   :
+      jsonrpc: "2.0"
+      method : "configuration.import"
+      id     : 1
+      auth   : "{{ auth_token.json.result }}"
+      params : 
+        format : "xml"
+        rules  :
+          groups   :
+            createMissing : true
+          templates:
+            createMissing : true
+            updateExisting: true
+          templateLinkage:
+            createMissing : true
+          items    :
+            createMissing : true
+            updateExisting: true
+            deleteMissing : true
+          hosts    :
+            createMissing : true
+            updateExisting: true
+          triggers :
+            createMissing : true
+            updateExisting: true
+            deleteMissing : true
+        source   : "{{ lookup('file', role_path~'/templates/configuration.xml') }}"
+    body_format     : json
+  when     : "xml_creating.changed"
+
+- debug:
+    var: api_templ_import.json
+  when       : "xml_creating.changed"
+#  failed_when: "api_templ_import.json.error is defined"

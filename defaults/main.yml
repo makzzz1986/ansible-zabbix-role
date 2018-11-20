@@ -1,0 +1,221 @@
+---
+zabbix_version: "4.0"
+# supported by Zabbix: 3.0, 3.1, 3.2, 3.4, 3.5, 4.0
+zabbix_version_postfix: 2
+# supported 2 for 4.0 and 1 for older versions
+
+zabbix_web_title   : "{{ project_name|default('Application') }}"
+zabbix_web_user    : "user"
+zabbix_web_password: "user"
+
+zabbix_mysql_user    : zabbix
+zabbix_mysql_password: zabbix
+zabbix_mysql_db      : zabbix
+
+zabbix_server_ip: "{{ hostvars[groups['monitoring'][0]]['ansible_default_ipv4']['address'] }}"
+
+# Options
+zabbix_server_config_options:
+  - option: DBHost
+    value : ""
+  - option: DBName
+    value : "{{ zabbix_mysql_db }}"
+  - option: DBUser
+    value : "{{ zabbix_mysql_user }}"
+  - option: DBPassword
+    value : "{{ zabbix_mysql_password }}"
+  - option: LogFileSize
+    value : 256
+
+zabbix_agent_config_options:
+  - option: Server
+    value : "127.0.0.1,{{ hostvars[groups['monitoring'][0] ]['ansible_default_ipv4']['address'] }}"
+
+zabbix_items_default_delay: 5m
+
+# Templates for data gathering and triggers
+zabbix_templates:
+  - name  : Linux server
+    desc  : General, non-specific checkings
+    groups: "{{ groups|difference(['all','ungrouped']) }}"
+    check_items:
+      - name      : "Used space on root"
+        key       : "vfs.fs.size[/,pused]"
+        value_type: 4
+        triggers  :
+          - name      : "Too much space is used (more than 80%) on {HOST.NAME}"
+            priority  : 2
+            postfix   : "last(#3)"
+            logic     : ">80"
+            depend    : "Too much space is used (more than 90%) on {HOST.NAME}"
+          - name      : "Too much space is used (more than 90%) on {HOST.NAME}"
+            priority  : 4
+            postfix   : "last(#3)"
+            logic     : ">90"
+      - name      : "Used memory"
+        key       : "vm.memory.size[pused]"
+        value_type: 4
+        triggers  :
+          - name      : "Too much memory is used (more than 80%) on {HOST.NAME}"
+            priority  : 2
+            postfix   : "last(#3)"
+            logic     : ">80"
+            depend    : "Too much memory is used (more than 90%) on {HOST.NAME}"
+          - name      : "Too much memory is used (more than 90%) on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : ">90"
+      - name      : "CPU Load average 1 min"
+        key       : "system.cpu.load[,avg1]"
+        value_type: 0
+        triggers  :
+          - name      : "High load (more than 5) on {HOST.NAME}"
+            priority  : 2
+            postfix   : "last(#3)"
+            logic     : ">5"
+            depend    : "Very high load (more than 10) on {HOST.NAME}"
+          - name      : "Very high load (more than 10) on {HOST.NAME}"
+            priority  : 4
+            postfix   : "last(#3)"
+            logic     : ">10"
+      - name      : "CPU Load average 5 min"
+        key       : "system.cpu.load[,avg5]"
+        value_type: 0
+        triggers  :
+          - name      : "High load (more than 5) on {HOST.NAME}"
+            priority  : 2
+            postfix   : "last(#3)"
+            logic     : ">5"
+            depend    : "Very high load (more than 10) on {HOST.NAME}"
+          - name      : "Very high load (more than 10) on {HOST.NAME}"
+            priority  : 4
+            postfix   : "last(#3)"
+            logic     : ">10"
+      - name      : "CPU Load average 15 min"
+        key       : "system.cpu.load[,avg15]"
+        value_type: 0
+        triggers  :
+          - name      : "High load (more than 5) on {HOST.NAME}"
+            priority  : 2
+            postfix   : "last(#3)"
+            logic     : ">5"
+            depend    : "Very high load (more than 10) on {HOST.NAME}"
+          - name      : "Very high load (more than 10) on {HOST.NAME}"
+            priority  : 4
+            postfix   : "last(#3)"
+            logic     : ">10"
+  - name  : Database
+    desc  : Database specific checkings
+    groups: 
+      - db
+    check_items:
+      - name      : "Listening PostgreSQL port"
+        key       : "net.tcp.listen[5432]"
+        value_type: 0
+        triggers  :
+          - name      : "PostgreSQL doesn't listen port 5432 on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+      - name      : "Service PostgreSQL checking"
+        key       : "proc.num[postgres,postgres,,-D]"
+        value_type: 0
+        triggers  :
+          - name      : "PosgreSQL isn't running on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+      - name      : "SQL query"
+        key       : system.run[psql -qA -U cs_iogv_alo -c "select * from django_migrations limit 1" 2> /dev/stdout|grep row -c]
+        value_type: 4
+        triggers  :
+          - name      : "Query to PostgreSQL fail {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+      - name      : "SQL wrong query"
+        key       : system.run[psql -qA -U cs_iogv_alo -c "select * from django_migra22tions limit 1" 2> /dev/stdout|grep row -c]
+        value_type: 4
+        triggers  :
+          - name      : "Query to PostgreSQL fail {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+  - name  : Application
+    desc  : Web-application specific checkings
+    groups: 
+      - app
+    check_items:
+      - name      : "HTTP get code"
+        key       : web.page.regexp[127.0.0.1,,,"HTTP/1.1 (\d*)",,"\1"]
+        value_type: 4
+        triggers  :
+          - name      : "HTTP response not 200 on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "&lt;&gt;200"
+      - name      : "Listening NGINX port"
+        key       : "net.tcp.listen[80]"
+        value_type: 0
+        triggers  :
+          - name      : "NGINX doesn't listen port 80 on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+      - name      : "Service NGINX checking"
+        key       : "proc.num[nginx,,,daemon]"
+        value_type: 0
+        triggers  :
+          - name      : "Nginx isn't running on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+      - name      : "Listening Gunicorn port"
+        key       : "net.tcp.listen[18000]"
+        value_type: 0
+        triggers  :
+          - name      : "Gunicorn doesn't listen port 18000 on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+      - name      : "Service Gunicorn checking"
+        key       : "proc.num[gunicorn]"
+        value_type: 0
+        triggers  :
+          - name      : "Gunicorn isn't running on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+      - name      : "Listening Redis port"
+        key       : "net.tcp.listen[6379]"
+        value_type: 0
+        triggers  :
+          - name      : "Redis doesn't listen port 6379 on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+      - name      : "Service Redis checking"
+        key       : "proc.num[redis-server,redis]"
+        value_type: 0
+        triggers  :
+          - name      : "Redis isn't running on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+      - name      : "Listening Postfix port"
+        key       : "net.tcp.listen[25]"
+        value_type: 0
+        triggers  :
+          - name      : "Postfix doesn't listen port 25 on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+      - name      : "Service Postfix checking"
+        key       : "proc.num[pickup,postfix]"
+        value_type: 0
+        triggers  :
+          - name      : "Postfix isn't running on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+      - name      : "Service Supervisor checking"
+        key       : "proc.num[supervisord]"
+        value_type: 0
+        triggers  :
+          - name      : "Supervisor isn't running on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+      - name      : "Service Celery checking"
+        key       : "proc.num[celery]"
+        value_type: 0
+        triggers  :
+          - name      : "Celery isn't running on {HOST.NAME}"
+            postfix   : "last(#3)"
+            logic     : "=0"
+

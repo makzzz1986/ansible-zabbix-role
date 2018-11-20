@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>4.0</version>
+    <date>2018-07-26T10:10:10Z</date>
+    <groups>
+{% for gr in (groups|difference(['all','ungrouped'])|sort)  %}
+        <group>
+            <name>{{ gr }}</name>
+        </group>
+{% endfor %}
+    </groups>
+    <hosts>
+{% for host in groups.all %}
+        <host>
+            <host>{{ host }}</host>
+            <name>{{ host }}</name>
+            <description/>
+            <proxy/>
+            <status>0</status>
+            <ipmi_authtype>-1</ipmi_authtype>
+            <ipmi_privilege>2</ipmi_privilege>
+            <tls_connect>1</tls_connect>
+            <tls_accept>1</tls_accept>
+            <ipmi_username/>
+            <ipmi_password/>
+            <tls_issuer/>
+            <tls_subject/>
+            <tls_psk_identity/>
+            <tls_psk/>
+            <groups>
+{% for group in hostvars[host]['group_names']  %}
+                <group>
+                    <name>{{ group }}</name>
+                </group>
+{% endfor %}
+            </groups>
+            <templates>
+{% for group in hostvars[host]['group_names']  %}
+{% for templ in zabbix_templates %}
+{% for group in hostvars[host]['group_names'] %}
+{% if group in templ.groups %}
+                <template>
+                    <name>{{ templ.name }}</name>
+                </template>
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endfor %}
+            </templates>
+            <interfaces>
+                <interface>
+                    <default>1</default>
+                    <type>1</type>
+                    <useip>0</useip>
+                    <ip/>
+                    <dns>{{ host }}</dns>
+                    <port>10050</port>
+                    <bulk>1</bulk>
+                    <interface_ref>if1</interface_ref>
+                </interface>
+            </interfaces>
+        </host>
+{% endfor %}
+    </hosts>
+    <templates>
+{% for template in zabbix_templates %}
+        <template>
+            <template>{{ template.name }}</template>
+            <name>{{ template.name }}</name>
+            <description>{{ template.desc }}</description>
+            <groups>
+{%     for gr in (template.groups|sort) %}
+                <group>
+                    <name>{{ gr }}</name>
+                </group>
+{%     endfor %}
+            </groups>
+            <items>
+{%     for it in template.check_items %}
+                <item>
+                    <name>{{ it.name }}</name>
+                    <key>{{ it.key }}</key>
+                    <delay>{{ it.delay|default(zabbix_items_default_delay) }}</delay>
+                    <history>{{ it.history|default('90d') }}</history>
+                    <trends>{{ it.trends|default('365d') }}</trends>
+                    <value_type>{{ it.value_type }}</value_type>
+                    <type>{{ it.type|default('0') }}</type>
+                    <status>{% if (it.enabled is defined) and (not it.enabled) %}1{% else %}0{% endif %}</status>
+                    <authtype>0</authtype>
+                    <inventory_link>0</inventory_link>
+                    <timeout>{{ it.timeout|default('3s')}}</timeout>
+                    <status_codes>200</status_codes>
+                    <follow_redirects>1</follow_redirects>
+                    <snmp_community/>
+                    <snmp_oid/>
+                    <allowed_hosts/>
+                    <units/>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                    <preprocessing/>
+                    <jmx_endpoint/>
+                    <url/>
+                    <query_fields/>
+                    <posts/>
+                    <post_type>0</post_type>
+                    <http_proxy/>
+                    <headers/>
+                    <retrieve_mode>0</retrieve_mode>
+                    <request_method>0</request_method>
+                    <output_format>0</output_format>
+                    <allow_traps>0</allow_traps>
+                    <ssl_cert_file/>
+                    <ssl_key_file/>
+                    <ssl_key_password/>
+                    <verify_peer>0</verify_peer>
+                    <verify_host>0</verify_host>
+                    <master_item/>
+                </item>
+{%      endfor %}
+            </items>
+        </template>
+{% endfor %}
+    </templates>
+    <triggers>
+{% for template in zabbix_templates %}
+{%    for it in template.check_items %}
+{%        if 'triggers' in it %}
+{%            for trigger in it.triggers %}
+        <trigger>
+            <expression>{{ '{' }}{{ template.name }}:{{ it.key }}.{{ trigger.postfix }}{{ '}' }}{{ trigger.logic }}</expression>
+            <recovery_mode>{{ trigger.recovery_mode|default('0') }}</recovery_mode>
+            <recovery_expression/>
+            <name>{{ trigger.name }}</name>
+            <correlation_mode>0</correlation_mode>
+            <correlation_tag/>
+            <url/>
+            <status>{{ trigger.status|default('0') }}</status>
+            <priority>{{ trigger.priority|default('4') }}</priority>
+            <description/>
+            <type>{{ trigger.type|default('0') }}</type>
+            <manual_close>0</manual_close>
+{%        if 'depend' in trigger %}
+            <dependencies>
+                <dependency>
+                    <name>{{ trigger.depend }}</name>
+                    <expression>{% for trig in it.triggers %}{% if trigger.depend == trig.name %}{{ '{' }}{{ template.name }}:{{ it.key }}.{{ trig.postfix }}{{ '}' }}{{ trig.logic }}{% endif %}{% endfor %}</expression>
+                    <recovery_expression/>
+                </dependency>
+
+            </dependencies>
+{%        else                   %}
+            <dependencies/>
+{%        endif                  %}
+            <tags/>
+        </trigger>
+{%            endfor %}
+{%        endif  %}
+{%    endfor %}
+{% endfor %}
+    </triggers>
+</zabbix_export>
+
