@@ -24,24 +24,25 @@ This role will create host groups from groups in ansible host file and hosts for
 ```zabbix_version: "4.0"```
 
 #### Zabbix minor version (supported 2 for 4.0 and 1 for older versions)
-zabbix_version_postfix: 2
+```zabbix_version_postfix: 2```
 
 #### Title of frontend
-zabbix_web_title   : "{{ project_name|default('Application') }}"
+```zabbix_web_title   : "{{ project_name|default('Application') }}"```
 
 #### Additional web user username
-zabbix_web_user    : "user"
+```zabbix_web_user    : "user"```
 
 #### Additional web user password
-zabbix_web_password: "user"
+```zabbix_web_password: "user"```
 
 #### Access to mysql database
-zabbix_mysql_user    : zabbix  
+```
+zabbix_mysql_user    : zabbix
 zabbix_mysql_password: zabbix  
 zabbix_mysql_db      : zabbix  
-
+```
 #### IP-address of Zabbix-server for Zabbix-agents
-zabbix_server_ip: "{{ hostvars[groups['monitoring'][0]]['ansible_default_ipv4']['address'] }}"  
+```zabbix_server_ip: "{{ hostvars[groups['monitoring'][0]]['ansible_default_ipv4']['address'] }}"  ```
 
 #### Zabbix-server configuration options
 ```
